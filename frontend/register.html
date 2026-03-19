@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VulnBank — Register</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 28px;
+    }
+    .step-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #dde3ea;
+      color: #666;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      transition: background 0.3s, color 0.3s;
+      position: relative; z-index: 1;
+    }
+    .step-dot.active  { background: var(--navy); color: #fff; }
+    .step-dot.done    { background: var(--gold); color: #fff; }
+    .step-line {
+      flex: 1; height: 3px; background: #dde3ea; max-width: 60px;
+      transition: background 0.3s;
+    }
+    .step-line.done { background: var(--gold); }
+    .step-label {
+      font-size: 11px; color: #888; text-align: center;
+      position: absolute; top: 38px; white-space: nowrap;
+      left: 50%; transform: translateX(-50%);
+    }
+    .step-dot { position: relative; }
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+  </style>
+</head>
+<body>
+<div class="vuln-warning">
+  ⚠️ INTENTIONALLY VULNERABLE APPLICATION — FOR SECURITY TRAINING ONLY — DO NOT DEPLOY TO PRODUCTION
+</div>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>Vuln<span>Bank</span></h1>
+      <p>Create Your Account</p>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot-1">1
+        <span class="step-label">Account</span>
+      </div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step-dot" id="dot-2">2
+        <span class="step-label">Username</span>
+      </div>
+    </div>
+
+    <div id="alert-box" class="alert" style="display:none;"></div>
+
+    <!-- ── Step 1: email + password ── -->
+    <div class="step-panel active" id="step-1">
+      <form id="step1-form">
+        <div class="form-group">
+          <label for="full_name">Full Name</label>
+          <input type="text" id="full_name" class="form-control" placeholder="John Doe">
+          <div class="form-hint">
+            <strong>Lab SSTI-1:</strong> Try <code>{{7*7}}</code> as your name, then generate a PDF statement.
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" class="form-control" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="Choose a password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="step1-btn">
+          Continue
+        </button>
+      </form>
+    </div>
+
+    <!-- ── Step 2: choose username (enumeration vuln lives here) ── -->
+    <div class="step-panel" id="step-2">
+      <form id="step2-form">
+        <div class="form-group">
+          <label for="username">Choose a Username</label>
+          <input type="text" id="username" class="form-control" placeholder="e.g. johndoe" required autofocus>
+          <div class="form-hint" style="border-left-color:#c0392b; background:#fff5f5;">
+            <strong>Lab A07 — Username Enumeration:</strong>
+            Try an existing username (<code>alice</code>, <code>bob</code>).
+            The server returns <strong>HTTP 409</strong> if taken vs <strong>HTTP 201</strong> on success —
+            confirming whether any username exists without creating an account.
+          </div>
+        </div>
+        <div id="enum-result" style="display:none; margin-bottom:14px;
+             padding:10px 14px; border-radius:6px; font-size:13px; font-family:monospace;"></div>
+        <button type="submit" class="btn btn-primary btn-block" id="step2-btn">
+          Create Account
+        </button>
+        <button type="button" class="btn btn-block" id="back-btn"
+                style="margin-top:8px; background:#f0f3f7; color:var(--navy);">
+          ← Back
+        </button>
+      </form>
+    </div>
+
+    <div style="text-align:center; margin-top:18px; font-size:13px;">
+      Already have an account? <a href="/index.html" style="color:var(--navy); font-weight:600;">Sign In</a>
+    </div>
+
+    <div class="lab-info" style="margin-top:16px;">
+      <strong>Lab VD-4b — OTP Null Bypass:</strong>
+      After registration, try <code>POST /reset/verify-otp</code> with <code>{"otp": null}</code> —
+      fresh accounts have <code>NULL</code> otp in DB → bypass works immediately.
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+  // ── Step 1 submit ──
+  document.getElementById('step1-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideAlert('alert-box');
+
+    const email     = document.getElementById('email').value.trim();
+    const password  = document.getElementById('password').value;
+    const full_name = document.getElementById('full_name').value.trim();
+    const btn       = document.getElementById('step1-btn');
+
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="loading"></span> Please wait...';
+
+    try {
+      const resp = await fetch('/register/init', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email, password, full_name }),
+      });
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        showAlert('alert-box', data.error || 'Step 1 failed', 'error');
+        return;
+      }
+
+      // Advance to step 2
+      document.getElementById('step-1').classList.remove('active');
+      document.getElementById('step-2').classList.add('active');
+      document.getElementById('dot-1').classList.replace('active', 'done');
+      document.getElementById('line-1').classList.add('done');
+      document.getElementById('dot-2').classList.add('active');
+      document.getElementById('username').focus();
+
+    } catch (err) {
+      showAlert('alert-box', 'Network error: ' + err.message, 'error');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Continue';
+    }
+  });
+
+  // ── Step 2 submit ──
+  document.getElementById('step2-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideAlert('alert-box');
+
+    const username   = document.getElementById('username').value.trim();
+    const btn        = document.getElementById('step2-btn');
+    const enumResult = document.getElementById('enum-result');
+
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="loading"></span> Creating account...';
+    enumResult.style.display = 'none';
+
+    try {
+      const resp = await fetch('/register/complete', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ username }),
+      });
+      const data = await resp.json();
+
+      // VULN: VD-2 — 409 distinctly exposes username existence
+      if (resp.status === 409) {
+        enumResult.style.cssText = 'display:block; padding:10px 14px; border-radius:6px;' +
+          'font-size:13px; font-family:monospace; background:#fff0f0; border:1px solid #e74c3c; color:#c0392b;';
+        enumResult.innerHTML =
+          `<strong>HTTP 409 Conflict</strong> — Username "<code>${username}</code>" already exists.<br>` +
+          `<span style="color:#555; font-size:12px;">Enumeration confirmed: this username is registered in the system.</span>`;
+        return;
+      }
+
+      if (!resp.ok) {
+        showAlert('alert-box', data.error || 'Registration failed', 'error');
+        return;
+      }
+
+      // Show success, then redirect
+      enumResult.style.cssText = 'display:block; padding:10px 14px; border-radius:6px;' +
+        'font-size:13px; font-family:monospace; background:#f0fff4; border:1px solid #27ae60; color:#1e8449;';
+      enumResult.innerHTML =
+        `<strong>HTTP 201 Created</strong> — Account created successfully!<br>` +
+        `<span style="color:#555; font-size:12px;">Redirecting to login...</span>`;
+
+      setTimeout(() => window.location.href = '/index.html', 1500);
+
+    } catch (err) {
+      showAlert('alert-box', 'Network error: ' + err.message, 'error');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Create Account';
+    }
+  });
+
+  // ── Back button ──
+  document.getElementById('back-btn').addEventListener('click', function () {
+    hideAlert('alert-box');
+    document.getElementById('step-2').classList.remove('active');
+    document.getElementById('step-1').classList.add('active');
+    document.getElementById('dot-2').classList.remove('active');
+    document.getElementById('line-1').classList.remove('done');
+    document.getElementById('dot-1').classList.replace('done', 'active');
+    document.getElementById('enum-result').style.display = 'none';
+  });
+</script>
+</body>
+</html>

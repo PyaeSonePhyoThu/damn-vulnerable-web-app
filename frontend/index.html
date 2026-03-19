@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VulnBank — Login</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="vuln-warning">
+  ⚠️ INTENTIONALLY VULNERABLE APPLICATION — FOR SECURITY TRAINING ONLY — DO NOT DEPLOY TO PRODUCTION
+</div>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>Vuln<span>Bank</span></h1>
+      <p>Secure Banking — Training Edition</p>
+    </div>
+
+    <div id="alert-box" class="alert alert-error" style="display:none;"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" class="form-control" placeholder="Enter your username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" class="form-control" placeholder="Enter your password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="login-btn">
+        Sign In
+      </button>
+    </form>
+
+    <div class="auth-divider">or</div>
+
+    <div style="text-align:center; font-size:13px; color: var(--text-light);">
+      <a href="/register.html" style="color:var(--navy); font-weight:600;">Create an account</a>
+      &nbsp;·&nbsp;
+      <a href="/forgot-password.html" style="color:var(--navy-light);">Forgot password?</a>
+    </div>
+
+    <div class="lab-info" style="margin-top:20px;">
+      <strong>Lab Accounts:</strong><br>
+      alice / password123 (Gold) &nbsp;·&nbsp; bob / letmein (Silver)<br>
+      charlie / 12345678 (Bronze) &nbsp;·&nbsp; diana / diana2024 (Silver)
+    </div>
+
+    <!-- VULN: NoSQL injection hint for lab -->
+    <div class="lab-info" style="margin-top:8px;">
+      <strong>Lab VD-3 — NoSQL Injection:</strong>
+      Try password: <code>{"$ne": ""}</code> to bypass MongoDB auth
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+  // Redirect if already logged in
+  if (getToken()) window.location.href = '/dashboard.html';
+
+  document.getElementById('login-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    hideAlert('alert-box');
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('login-btn');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span> Signing in...';
+
+    try {
+      const resp = await fetch('/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ username, password }),
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        showAlert('alert-box', data.error || 'Login failed', 'error');
+        return;
+      }
+
+      // VULN: JWT-1 — token stored in localStorage (XSS accessible)
+      localStorage.setItem('jwt_token', data.token);
+      // Also set cookie (without httponly/secure) — VULN: JWT-1
+      document.cookie = `jwt_token=${data.token};path=/`;
+
+      window.location.href = '/dashboard.html';
+    } catch (err) {
+      showAlert('alert-box', 'Network error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  });
+</script>
+</body>
+</html>

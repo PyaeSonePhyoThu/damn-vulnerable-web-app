@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VulnBank — Dashboard</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="vuln-warning">
+  ⚠️ INTENTIONALLY VULNERABLE — TRAINING ONLY
+</div>
+
+<nav class="navbar">
+  <a href="/dashboard.html" class="navbar-brand">Vuln<span class="gold">Bank</span></a>
+  <ul class="navbar-nav">
+    <li><a href="/dashboard.html" class="active">Dashboard</a></li>
+    <li><a href="/transfer.html">Transfer</a></li>
+    <li><a href="/profile.html">Profile</a></li>
+    <li><a href="#" onclick="logout()">Sign Out</a></li>
+    <li><span class="nav-user" id="nav-user"></span></li>
+  </ul>
+</nav>
+
+<div class="main-content">
+  <div class="page-header">
+    <h1>Welcome back, <span id="welcome-name">—</span></h1>
+    <p>Subscription tier: <span id="sub-badge"></span></p>
+  </div>
+
+  <!-- Stats row -->
+  <div class="card-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div>
+        <div class="stat-label">Total Balance</div>
+        <div class="stat-value" id="total-balance">—</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🏦</div>
+      <div>
+        <div class="stat-label">Accounts</div>
+        <div class="stat-value" id="account-count">—</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📄</div>
+      <div>
+        <div class="stat-label">PDF Statement</div>
+        <div class="stat-value">
+          <button class="btn btn-gold btn-sm" id="pdf-btn" onclick="downloadStatement()">Download</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accounts -->
+  <div class="card">
+    <div class="card-header">
+      <h2>My Accounts</h2>
+      <a href="/transfer.html" class="btn btn-primary btn-sm">+ New Transfer</a>
+    </div>
+    <div class="card-grid" id="accounts-container">
+      <p style="color:var(--text-light);">Loading accounts...</p>
+    </div>
+  </div>
+
+  <!-- Cards — VULN: A02 — Plaintext card data -->
+  <div class="card">
+    <div class="card-header">
+      <h2>My Cards</h2>
+      <span class="lab-info" style="margin:0;padding:5px 10px;font-size:11px;">
+        VULN A02: Full card numbers &amp; CVVs in plaintext
+      </span>
+    </div>
+    <div id="cards-container">
+      <p style="color:var(--text-light);font-size:13px;">Loading cards...</p>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Recent Transactions</h2>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="txn-tbody">
+          <tr><td colspan="5" style="text-align:center;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Lab Info Panel -->
+  <div class="card" style="border-left: 4px solid var(--gold);">
+    <div class="card-header"><h2>Lab Quick Reference</h2></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:12px;">
+      <div class="lab-info">
+        <strong>SSTI-1 (PDF):</strong> Set full_name to <code>{{FLAG}}</code> in Profile,
+        then download this statement PDF.
+      </div>
+      <div class="lab-info">
+        <strong>MA-1 (Mass Assignment):</strong> POST <code>/api/profile/update</code>
+        with <code>{"subscription_type":"gold"}</code> then re-login.
+      </div>
+      <div class="lab-info">
+        <strong>A03 (SQLi):</strong> GET <code>/api/account/x'%20OR%20'1'%3D'1</code>
+        returns all accounts.
+      </div>
+      <div class="lab-info">
+        <strong>A05 (Backup):</strong> GET <code>/api/backup</code> downloads full SQLite DB.
+      </div>
+      <div class="lab-info">
+        <strong>A10 (SSRF) — Scenario 1:</strong> <code>/api/fetch-statement?url=http://internal-admin:9000/config</code> — hidden internal service with DB/JWT/SMTP credentials<br>
+        <strong>A10 (SSRF) — Scenario 2:</strong> <code>/api/fetch-statement?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/vulnbank-prod-role</code> — steal AWS IAM credentials from IMDS
+      </div>
+      <div class="lab-info">
+        <strong>JWT-2 (alg:none):</strong> Forge a JWT with <code>"alg":"none"</code>
+        — PyJWT 1.7.1 accepts it.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>
