@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.getElementById('limit-info').innerHTML =
             `Subscription: ${getSubscriptionBadge(sub)} &nbsp;·&nbsp; ` +
             `Transfer limit: <strong>${formatCurrency(limits[sub] || 1000)}</strong> &nbsp;·&nbsp; ` +
-            `Daily limit: <strong>${formatCurrency(daily[sub] || 3000)}</strong><br>` +
-            `<span style="font-size:11px;color:#856404;">VULN A04: Negative amounts bypass the limit check and reverse fund flow.</span>`;
+            `Daily limit: <strong>${formatCurrency(daily[sub] || 3000)}</strong>`;
     }
 });
 

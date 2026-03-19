@@ -41,9 +41,6 @@
   </style>
 </head>
 <body>
-<div class="vuln-warning">
-  ⚠️ INTENTIONALLY VULNERABLE APPLICATION — FOR SECURITY TRAINING ONLY — DO NOT DEPLOY TO PRODUCTION
-</div>
 
 <div class="auth-wrapper">
   <div class="auth-card">
@@ -52,7 +49,6 @@
       <p>Create Your Account</p>
     </div>
 
-    <!-- Step indicator -->
     <div class="step-indicator">
       <div class="step-dot active" id="dot-1">1
         <span class="step-label">Account</span>
@@ -65,15 +61,12 @@
 
     <div id="alert-box" class="alert" style="display:none;"></div>
 
-    <!-- ── Step 1: email + password ── -->
+    <!-- Step 1: email + password -->
     <div class="step-panel active" id="step-1">
       <form id="step1-form">
         <div class="form-group">
           <label for="full_name">Full Name</label>
           <input type="text" id="full_name" class="form-control" placeholder="John Doe">
-          <div class="form-hint">
-            <strong>Lab SSTI-1:</strong> Try <code>{{7*7}}</code> as your name, then generate a PDF statement.
-          </div>
         </div>
         <div class="form-group">
           <label for="email">Email Address</label>
@@ -89,18 +82,12 @@
       </form>
     </div>
 
-    <!-- ── Step 2: choose username (enumeration vuln lives here) ── -->
+    <!-- Step 2: choose username -->
     <div class="step-panel" id="step-2">
       <form id="step2-form">
         <div class="form-group">
           <label for="username">Choose a Username</label>
           <input type="text" id="username" class="form-control" placeholder="e.g. johndoe" required autofocus>
-          <div class="form-hint" style="border-left-color:#c0392b; background:#fff5f5;">
-            <strong>Lab A07 — Username Enumeration:</strong>
-            Try an existing username (<code>alice</code>, <code>bob</code>).
-            The server returns <strong>HTTP 409</strong> if taken vs <strong>HTTP 201</strong> on success —
-            confirming whether any username exists without creating an account.
-          </div>
         </div>
         <div id="enum-result" style="display:none; margin-bottom:14px;
              padding:10px 14px; border-radius:6px; font-size:13px; font-family:monospace;"></div>
@@ -117,18 +104,11 @@
     <div style="text-align:center; margin-top:18px; font-size:13px;">
       Already have an account? <a href="/index.html" style="color:var(--navy); font-weight:600;">Sign In</a>
     </div>
-
-    <div class="lab-info" style="margin-top:16px;">
-      <strong>Lab VD-4b — OTP Null Bypass:</strong>
-      After registration, try <code>POST /reset/verify-otp</code> with <code>{"otp": null}</code> —
-      fresh accounts have <code>NULL</code> otp in DB → bypass works immediately.
-    </div>
   </div>
 </div>
 
 <script src="/static/js/app.js"></script>
 <script>
-  // ── Step 1 submit ──
   document.getElementById('step1-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     hideAlert('alert-box');
@@ -154,7 +134,6 @@
         return;
       }
 
-      // Advance to step 2
       document.getElementById('step-1').classList.remove('active');
       document.getElementById('step-2').classList.add('active');
       document.getElementById('dot-1').classList.replace('active', 'done');
@@ -170,7 +149,6 @@
     }
   });
 
-  // ── Step 2 submit ──
   document.getElementById('step2-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     hideAlert('alert-box');
@@ -191,13 +169,10 @@
       });
       const data = await resp.json();
 
-      // VULN: VD-2 — 409 distinctly exposes username existence
       if (resp.status === 409) {
         enumResult.style.cssText = 'display:block; padding:10px 14px; border-radius:6px;' +
-          'font-size:13px; font-family:monospace; background:#fff0f0; border:1px solid #e74c3c; color:#c0392b;';
-        enumResult.innerHTML =
-          `<strong>HTTP 409 Conflict</strong> — Username "<code>${username}</code>" already exists.<br>` +
-          `<span style="color:#555; font-size:12px;">Enumeration confirmed: this username is registered in the system.</span>`;
+          'font-size:13px; background:#fff0f0; border:1px solid #e74c3c; color:#c0392b;';
+        enumResult.textContent = data.error || 'Username already taken. Please choose another.';
         return;
       }
 
@@ -206,12 +181,9 @@
         return;
       }
 
-      // Show success, then redirect
       enumResult.style.cssText = 'display:block; padding:10px 14px; border-radius:6px;' +
-        'font-size:13px; font-family:monospace; background:#f0fff4; border:1px solid #27ae60; color:#1e8449;';
-      enumResult.innerHTML =
-        `<strong>HTTP 201 Created</strong> — Account created successfully!<br>` +
-        `<span style="color:#555; font-size:12px;">Redirecting to login...</span>`;
+        'font-size:13px; background:#f0fff4; border:1px solid #27ae60; color:#1e8449;';
+      enumResult.textContent = 'Account created successfully! Redirecting to login...';
 
       setTimeout(() => window.location.href = '/index.html', 1500);
 
@@ -223,7 +195,6 @@
     }
   });
 
-  // ── Back button ──
   document.getElementById('back-btn').addEventListener('click', function () {
     hideAlert('alert-box');
     document.getElementById('step-2').classList.remove('active');
