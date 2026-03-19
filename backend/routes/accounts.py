@@ -67,6 +67,34 @@ def search_accounts():
     return jsonify([dict(r) for r in rows]), 200
 
 
+@accounts_bp.route('/api/cif/<cif>', methods=['GET'])
+@jwt_required
+def lookup_by_cif(cif):
+    # VULN: CIF-1 — No ownership check; any authenticated user can look up any CIF
+    # VULN: A04 — No rate limiting; CIF is a sequential 6-digit number (100001, 100002, …)
+    #              → trivially brute-forced to enumerate all customers
+    # VULN: A02 — Full card numbers and CVVs returned in plaintext
+    db = get_db()
+    user = db.execute('SELECT * FROM users WHERE cif = ?', (cif,)).fetchone()
+    if not user:
+        db.close()
+        return jsonify({'error': 'CIF not found'}), 404
+
+    user_id = user['id']
+    accounts = db.execute('SELECT * FROM accounts WHERE user_id = ?', (user_id,)).fetchall()
+    cards    = db.execute('SELECT * FROM cards WHERE user_id = ?', (user_id,)).fetchall()
+    db.close()
+
+    return jsonify({
+        'cif':      cif,
+        'full_name': user['full_name'],
+        'email':    user['email'],
+        'phone':    user['phone'],
+        'accounts': [dict(a) for a in accounts],
+        'cards':    [dict(c) for c in cards],
+    }), 200
+
+
 @accounts_bp.route('/api/subscription/limits', methods=['GET'])
 @jwt_required
 def get_limits():

@@ -110,9 +110,7 @@ document.getElementById('avatar-form').addEventListener('submit', async function
         document.getElementById('avatar-url-link').href = data.avatar_url;
         document.getElementById('avatar-url-link').textContent = data.avatar_url;
 
-        showAlert('avatar-alert',
-            `Avatar uploaded: ${data.avatar_url} — Navigate directly to the URL to trigger XSS for SVG files.`,
-            'success');
+        showAlert('avatar-alert', 'Avatar updated successfully.', 'success');
     } catch (err) {
         showAlert('avatar-alert', 'Network error: ' + err.message, 'error');
     } finally {

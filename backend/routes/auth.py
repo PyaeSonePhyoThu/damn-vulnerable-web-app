@@ -118,6 +118,10 @@ def register_complete():
     # VULN: A02 — MD5, no salt
     password_hash = md5(password)
 
+    # Assign sequential CIF — predictable, brute-forceable (VULN: CIF-1)
+    max_cif_row = db.execute('SELECT MAX(CAST(cif AS INTEGER)) FROM users').fetchone()
+    next_cif = str((max_cif_row[0] or 100000) + 1)
+
     # VULN: A02 — plaintext password stored in MongoDB
     try:
         from pymongo import MongoClient
@@ -136,16 +140,16 @@ def register_complete():
 
     # otp column NULL for new accounts (enables null bypass VD-4b)
     db.execute(
-        '''INSERT INTO users (id, username, email, password_hash, full_name, subscription_type, otp)
-           VALUES (?,?,?,?,?,?,NULL)''',
-        (user_id, username, email, password_hash, full_name, 'bronze')
+        '''INSERT INTO users (id, username, email, password_hash, full_name, subscription_type, otp, cif)
+           VALUES (?,?,?,?,?,?,NULL,?)''',
+        (user_id, username, email, password_hash, full_name, 'bronze', next_cif)
     )
 
     acc_id  = str(uuid.uuid4())
     acc_num = f"ACC-{hashlib.md5(f'{username}savings{user_id}'.encode()).hexdigest()[:8].upper()}"
     db.execute(
         'INSERT INTO accounts (id, user_id, account_number, account_type, balance) VALUES (?,?,?,?,?)',
-        (acc_id, user_id, acc_num, 'savings', 0.00)
+        (acc_id, user_id, acc_num, 'savings', 100.00)
     )
 
     db.commit()
@@ -156,7 +160,7 @@ def register_complete():
     session.pop('reg_full_name', None)
 
     # VULN: A09 — new registration not logged
-    return jsonify({'message': 'Registration successful', 'user_id': user_id}), 201
+    return jsonify({'message': 'Registration successful', 'user_id': user_id, 'cif': next_cif}), 201
 
 
 @auth_bp.route('/login', methods=['POST'])
@@ -237,12 +241,10 @@ def forgot_password():
     db.commit()
     db.close()
 
-    # VULN: A09 — token exposed in API response (debug leak)
     # NOTE: No Host header usage — host header injection is NOT in this build
+    # Token is stored in DB; in a real app it would be emailed. Here it must be guessed.
     return jsonify({
-        'message':     'Password reset link sent to your email',
-        'debug_token': reset_token,  # VULN: A09 — token leaked in response
-        'hint':        'Token = MD5(username)',
+        'message': 'If an account exists, a reset token has been sent to your email',
     }), 200
 
 
@@ -271,8 +273,7 @@ def request_otp():
     db.close()
 
     return jsonify({
-        'message':   'OTP sent to your email',
-        'debug_otp': otp,  # VULN: A09 — OTP leaked in response
+        'message': 'OTP sent to your email',
     }), 200
 
 

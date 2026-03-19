@@ -27,6 +27,7 @@ USERS = [
         'ssn': '123-45-6789',
         'subscription_type': 'gold',
         'address': '123 Gold St, New York, NY',
+        'cif': '100001',
     },
     {
         'id': str(uuid.UUID(int=2)),
@@ -39,6 +40,7 @@ USERS = [
         'ssn': '987-65-4321',
         'subscription_type': 'silver',
         'address': '456 Silver Ave, Chicago, IL',
+        'cif': '100002',
     },
     {
         'id': str(uuid.UUID(int=5)),
@@ -51,6 +53,7 @@ USERS = [
         'ssn': '654-32-1098',
         'subscription_type': 'bronze',
         'address': '47 Pyay Road, Yangon, Myanmar',
+        'cif': '100003',
     },
 ]
 
@@ -94,7 +97,8 @@ def init_db():
             reset_token      TEXT,
             reset_token_expiry TEXT,
             otp              TEXT,
-            otp_expiry       TEXT
+            otp_expiry       TEXT,
+            cif              TEXT UNIQUE
         );
 
         CREATE TABLE IF NOT EXISTS accounts (
@@ -138,10 +142,10 @@ def init_db():
             # VULN: A02 — otp column left NULL for fresh accounts (enables null bypass VD-4b)
             c.execute(
                 '''INSERT INTO users
-                   (id, username, email, password_hash, full_name, phone, address, ssn, subscription_type, otp)
-                   VALUES (?,?,?,?,?,?,?,?,?,NULL)''',
+                   (id, username, email, password_hash, full_name, phone, address, ssn, subscription_type, otp, cif)
+                   VALUES (?,?,?,?,?,?,?,?,?,NULL,?)''',
                 (u['id'], u['username'], u['email'], u['password_hash'],
-                 u['full_name'], u['phone'], u['address'], u['ssn'], u['subscription_type'])
+                 u['full_name'], u['phone'], u['address'], u['ssn'], u['subscription_type'], u['cif'])
             )
 
     db.commit()
