@@ -1,4 +1,4 @@
-// VulnBank — Transfer JS
+// Exploitable Bank — Transfer JS
 document.addEventListener('DOMContentLoaded', async function () {
     requireAuth();
     await loadAccounts();

@@ -107,7 +107,7 @@ def generate_pdf():
 </div>
 
 <div class="footer">
-  VulnBank &copy; 2025 &nbsp;|&nbsp; This document is generated for security training purposes only<br>
+  Exploitable Bank &copy; 2025 &nbsp;|&nbsp; This document is generated for security training purposes only<br>
   Account statements are confidential. Unauthorised disclosure is prohibited.
 </div>
 </body>

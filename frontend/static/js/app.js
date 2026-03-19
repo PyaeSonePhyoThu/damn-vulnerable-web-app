@@ -1,4 +1,4 @@
-// VulnBank — Shared Auth Helpers
+// Exploitable Bank — Shared Auth Helpers
 // VULN: JWT-1 — JWT stored in localStorage, accessible to any JS on the page
 // VULN: JWT-2 — payload decoded client-side; subscription_type fully visible
 

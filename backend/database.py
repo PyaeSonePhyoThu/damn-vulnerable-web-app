@@ -158,7 +158,7 @@ def init_db():
             continue
         user_id = user['id']
         # Deterministic account number using seed
-        acc_num = f"ACC-{hashlib.md5(f'{username}{acc_type}'.encode()).hexdigest()[:8].upper()}"
+        acc_num = str(int(hashlib.md5(f'{username}{acc_type}'.encode()).hexdigest(), 16) % 10**11).zfill(11)
         acc_id = str(uuid.UUID(int=acc_idx + 100))
         acc_idx += 1
         existing = c.execute('SELECT id FROM accounts WHERE account_number = ?', (acc_num,)).fetchone()
@@ -183,8 +183,8 @@ def init_db():
             sample_txns = [
                 (str(uuid.uuid4()), alice_acc[0], bob_acc[0], 500.00, 'Payment for services', '2025-02-01 10:00:00'),
                 (str(uuid.uuid4()), bob_acc[0], alice_acc[0], 200.00, 'Rent share', '2025-02-05 14:30:00'),
-                (str(uuid.uuid4()), alice_acc[0], aung_acc[0] if aung_acc else 'ACC-UNKNOWN', 150.00, 'Overseas transfer', '2025-02-10 12:00:00'),
-                (str(uuid.uuid4()), bob_acc[0], aung_acc[0] if aung_acc else 'ACC-UNKNOWN', 75.00, 'Reimbursement', '2025-02-15 09:00:00'),
+                (str(uuid.uuid4()), alice_acc[0], aung_acc[0] if aung_acc else '00000000000', 150.00, 'Overseas transfer', '2025-02-10 12:00:00'),
+                (str(uuid.uuid4()), bob_acc[0], aung_acc[0] if aung_acc else '00000000000', 75.00, 'Reimbursement', '2025-02-15 09:00:00'),
             ]
             for tx in sample_txns:
                 c.execute(

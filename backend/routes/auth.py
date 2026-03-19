@@ -146,7 +146,7 @@ def register_complete():
     )
 
     acc_id  = str(uuid.uuid4())
-    acc_num = f"ACC-{hashlib.md5(f'{username}savings{user_id}'.encode()).hexdigest()[:8].upper()}"
+    acc_num = str(int(hashlib.md5(f'{username}savings{user_id}'.encode()).hexdigest(), 16) % 10**11).zfill(11)
     db.execute(
         'INSERT INTO accounts (id, user_id, account_number, account_type, balance) VALUES (?,?,?,?,?)',
         (acc_id, user_id, acc_num, 'savings', 100.00)

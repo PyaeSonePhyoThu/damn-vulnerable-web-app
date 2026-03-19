@@ -1,5 +1,5 @@
 """
-VulnBank — Internal API Documentation Server
+Exploitable Bank — Internal API Documentation Server
 
 Binds to 127.0.0.1:9000 (loopback only).
 This service is NOT accessible from outside the backend container:
@@ -27,11 +27,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 API_SPEC = {
     "openapi": "3.0.0",
     "info": {
-        "title":       "VulnBank Internal API",
+        "title":       "Exploitable Bank Internal API",
         "version":     "2.1.0",
         "description": "INTERNAL USE ONLY — Not exposed via public gateway",
         "contact": {
-            "team":  "VulnBank Platform Engineering",
+            "team":  "Exploitable Bank Platform Engineering",
             "slack": "#platform-internal",
             "note":  "Do not share outside the engineering org",
         },

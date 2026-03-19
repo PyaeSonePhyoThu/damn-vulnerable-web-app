@@ -1,4 +1,4 @@
-// VulnBank — Profile JS
+// Exploitable Bank — Profile JS
 document.addEventListener('DOMContentLoaded', async function () {
     requireAuth();
     await loadProfile();
@@ -13,7 +13,6 @@ async function loadProfile() {
         document.getElementById('email').value            = user.email || '';
         document.getElementById('phone').value            = user.phone || '';
         document.getElementById('address').value          = user.address || '';
-        document.getElementById('subscription_type').value = user.subscription_type || 'bronze';
         document.getElementById('ssn-display').textContent = user.ssn || 'N/A';  // VULN: A02 — plaintext SSN
 
         // Set avatar
@@ -34,13 +33,11 @@ document.getElementById('profile-form').addEventListener('submit', async functio
     e.preventDefault();
     hideAlert('alert-box');
 
-    // VULN: MA-1 — subscription_type submitted directly from form field
     const payload = {
-        full_name:         document.getElementById('full_name').value.trim(),
-        email:             document.getElementById('email').value.trim(),
-        phone:             document.getElementById('phone').value.trim(),
-        address:           document.getElementById('address').value.trim(),
-        subscription_type: document.getElementById('subscription_type').value,  // VULN: MA-1
+        full_name: document.getElementById('full_name').value.trim(),
+        email:     document.getElementById('email').value.trim(),
+        phone:     document.getElementById('phone').value.trim(),
+        address:   document.getElementById('address').value.trim(),
     };
 
     const btn = document.getElementById('save-btn');
@@ -61,9 +58,7 @@ document.getElementById('profile-form').addEventListener('submit', async functio
             return;
         }
 
-        showAlert('alert-box',
-            `Profile updated! Subscription: ${data.subscription_type}. Re-login to get new JWT with updated claims.`,
-            'success');
+        showAlert('alert-box', 'Profile updated successfully.', 'success');
         document.getElementById('sub-badge').innerHTML = getSubscriptionBadge(data.subscription_type);
     } catch (err) {
         showAlert('alert-box', 'Network error: ' + err.message, 'error');

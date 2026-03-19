@@ -1,4 +1,4 @@
-// VulnBank — Dashboard JS
+// Exploitable Bank — Dashboard JS
 document.addEventListener('DOMContentLoaded', async function () {
     requireAuth();
 
@@ -34,7 +34,7 @@ async function loadAccounts() {
               <div class="acc-type">${acc.account_type} Account</div>
               <div class="acc-number">${acc.account_number}</div>
               <div class="acc-balance">${formatCurrency(acc.balance)}</div>
-              <div class="acc-currency">${acc.currency} · VulnBank</div>
+              <div class="acc-currency">${acc.currency} · Exploitable Bank</div>
             </div>`;
         });
 
