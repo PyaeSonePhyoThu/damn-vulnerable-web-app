@@ -27,11 +27,6 @@ def generate_pdf():
     filename = today.strftime('%d-%m-%Y') + '.pdf'
     date_str = today.strftime('%d-%m-%Y')
 
-    # VULN: SSTI-1 — user['full_name'] embedded into the template string via f-string
-    # BEFORE render_template_string is called. Jinja2 expressions in full_name are executed.
-    # e.g. full_name = "{{7*7}}"   → PDF shows "49"
-    # e.g. full_name = "{{config.items()|list}}"  → PDF shows Flask config (JWT secret etc.)
-    # e.g. full_name = "{{config.__class__.__init__.__globals__['os'].popen('id').read()}}"
     html_template = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -118,8 +113,6 @@ def generate_pdf():
 </body>
 </html>"""
 
-    # VULN: SSTI-1 — render_template_string evaluates Jinja2 in the full template,
-    # including user['full_name'] which was embedded via f-string above
     ctx = {
         'user':         user,
         'accounts':     accounts,
@@ -129,7 +122,6 @@ def generate_pdf():
     try:
         rendered_html = render_template_string(html_template, **ctx)
     except Exception as e:
-        # VULN: A05 — SSTI/template error details exposed
         return jsonify({'error': 'Template render error', 'detail': str(e)}), 500
 
     try:

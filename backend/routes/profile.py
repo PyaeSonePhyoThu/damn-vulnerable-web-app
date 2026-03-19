@@ -88,9 +88,13 @@ def upload_avatar():
     if not file:
         return jsonify({'error': 'No file provided'}), 400
 
-    # VULN: VD-SVG — No MIME type check, no extension whitelist, no content scan
-    # SVG files with embedded <script> will execute when browsed directly
-    filename  = file.filename  # VULN: A08 — original filename used, no sanitisation
+    # VULN: VD-SVG — Extension checked but MIME type not validated; attacker can rename
+    # any file to .svg and upload it. SVG files with embedded <script> still execute
+    # when browsed directly — XSS lab is fully intact.
+    filename = file.filename  # VULN: A08 — original filename used, no sanitisation
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ('.svg', '.png', '.jpg', '.jpeg'):
+        return jsonify({'error': 'Only SVG, PNG, and JPG files are allowed'}), 400
     save_path = os.path.join('/app/backend/uploads', filename)
     file.save(save_path)
 
